@@ -1,17 +1,18 @@
-# Load libraries
-if (!require(pacman)) {
+#load libraries
+if(!require(pacman)){
   install.packages("pacman")
-  pacman::p_load(lattice, ggplot2, caret, readr, corrplot, reshape2, caTools, dplyr, lubridate, tidyr,
-                 ggfortify, plotly, devtools, vars, ggpubr, matrixStats, ranger, rpart.plot, stringr,
-                 Rmisc, scales, doParallel, ROSE, e1071, kknn, DMwR)
-} else{
-  pacman::p_load(lattice, ggplot2, caret, readr, corrplot, reshape2, caTools, dplyr, lubridate, tidyr,
-                 ggfortify, plotly, devtools, vars, ggpubr, matrixStats, ranger, rpart.plot, stringr,
-                 Rmisc, scales, doParallel, ROSE, e1071, kknn, DMwR)
+  library(pacman)
 }
 
+pacman::p_load(lattice, ggplot2, caret, readr, corrplot, reshape2, caTools, dplyr, lubridate, tidyr,
+                 ggfortify, plotly, devtools, vars, ggpubr, matrixStats, ranger, rpart.plot, stringr,
+                 Rmisc, scales, doParallel, ROSE, e1071, kknn, DMwR, rstudioapi)
+
 # load data sets
-ism <- read_csv("C:/Users/FDL_4/OneDrive/Escritorio/Course/Module 5/small matrix/iphone_smallmatrix_labeled_8d.csv")
+current_path <- rstudioapi::getActiveDocumentContext()$path
+setwd(dirname(current_path))
+
+ism <- read_csv("iphone_smallmatrix_labeled_8d.csv")
 View(ism)
 
 summary(ism)
@@ -38,7 +39,7 @@ stopCluster(cl)
 #plan of attack #iphone
 sum(is.na(ism))
 
-plot_ly(ism, x= ~ism$iphonesentiment, type='histogram')
+plot_ly(ism, x = ~ism$iphonesentiment, type = "histogram")
 
 #correlation matrix
 corr_ism <- cor(ism)
@@ -56,11 +57,11 @@ nzv <- nearZeroVar(ism, saveMetrics = FALSE)
 nzv
 
 # create a new data set and remove near zero variance features
-ismNZV <- ism[,-nzv]
+ismNZV <- ism[, -nzv]
 str(ismNZV)
 
 #random forest feature selection ####
-set.seed(123);iphoneSample <- ism[sample(1:nrow(ism), 1000, replace=FALSE),]
+set.seed(123);iphoneSample <- ism[sample(1:nrow(ism), 1000, replace = FALSE), ]
 
 # Set up rfeControl with randomforest, repeated cross validation and no updates
 ctrl <- rfeControl(functions = rfFuncs, 
@@ -69,16 +70,16 @@ ctrl <- rfeControl(functions = rfFuncs,
                    verbose = FALSE)
 
 # Use rfe and omit the response variable (attribute 59 iphonesentiment) 
-set.seed(123);rfeResults <- rfe(iphoneSample[,1:58], 
+set.seed(123);rfeResults <- rfe(iphoneSample[, 1:58], 
                   iphoneSample$iphonesentiment, 
-                  sizes=(1:58), 
-                  rfeControl=ctrl)
+                  sizes = (1:58), 
+                  rfeControl = ctrl)
 
 # Get results
 rfeResults
 
 # Plot results
-plot(rfeResults, type=c("g", "o"))
+plot(rfeResults, type = c("g", "o"))
 
 # create new data set with rfe recommended features
 ismRFE <- ism[,predictors(rfeResults)]
@@ -157,8 +158,8 @@ plot(ismRFE_GNB$iphonesentiment)
 #modeling
 #ism_GNB
 set.seed(123);inTraining_1 <- createDataPartition(ism_GNB$iphonesentiment, p = .70, list = FALSE)
-training_1 <- ism_GNB[inTraining_1,]
-testing_1 <- ism_GNB[-inTraining_1,]
+training_1 <- ism_GNB[inTraining_1, ]
+testing_1 <- ism_GNB[-inTraining_1, ]
 
 #random forest #Accuracy: 0.7728 // Kappa: 0.5448
 set.seed(123);ism_GNB_M1 <- ranger(iphonesentiment~., data = training_1)
@@ -169,7 +170,7 @@ confusionMatrix(table(testing_1$iphonesentiment, Pred_ism_GNB_M1))
 rm("ism_GNB_M1", "Pred_ism_GNB_M1")
 
 #C5.0 #Accuracy: 0.771 // Kappa: 0.5384
-set.seed(123);ism_GNB_M2 <- train(iphonesentiment~., data = training_1, method = "C5.0")
+set.seed(123);ism_GNB_M2 <- train(iphonesentiment ~ ., data = training_1, method = "C5.0")
 Pred_ism_GNB_M2 <- predict(ism_GNB_M2, testing_1)
 
 confusionMatrix(table(testing_1$iphonesentiment, Pred_ism_GNB_M2))
@@ -202,11 +203,11 @@ rm("ism_GNB_M5", "Pred_ism_GNB_M5", "inTraining_1", "training_1", "testing_1")
 
 #ismNZV_GNB
 set.seed(123);inTraining_2 <- createDataPartition(ismNZV_GNB$iphonesentiment, p = .70, list = FALSE)
-training_2 <- ismNZV_GNB[inTraining_2,]
-testing_2 <- ismNZV_GNB[-inTraining_2,]
+training_2 <- ismNZV_GNB[inTraining_2, ]
+testing_2 <- ismNZV_GNB[-inTraining_2, ]
 
 #random forest #Accuracy: 0.7659 // Kappa: 0.5256
-set.seed(123);ismNZV_GNB_M1 <- ranger(iphonesentiment~., data = training_2)
+set.seed(123);ismNZV_GNB_M1 <- ranger(iphonesentiment ~ ., data = training_2)
 #set.seed(123);ismNZV_GNB_M1 <- train(iphonesentiment~., data = training_2, method = "rf")
 Pred_ismNZV_GNB_M1 <- predict(ismNZV_GNB_M1, testing_2)
 
@@ -214,7 +215,7 @@ confusionMatrix(table(testing_2$iphonesentiment, Pred_ismNZV_GNB_M1$predictions)
 rm("ismNZV_GNB_M1", "Pred_ismNZV_GNB_M1")
 
 #C5.0 #Accuracy: 0.7623 // Kappa: 0.5177
-set.seed(123);ismNZV_GNB_M2 <- train(iphonesentiment~., data = training_2, method = "C5.0")
+set.seed(123);ismNZV_GNB_M2 <- train(iphonesentiment ~ ., data = training_2, method = "C5.0")
 Pred_ismNZV_GNB_M2 <- predict(ismNZV_GNB_M2, testing_2)
 
 confusionMatrix(table(testing_2$iphonesentiment, Pred_ismNZV_GNB_M2))
@@ -243,8 +244,8 @@ rm("ismNZV_GNB_M5", "Pred_ismNZV_GNB_M5", "inTraining_2", "training_2", "testing
 
 #ismRFE_GNB
 set.seed(123);inTraining_3 <- createDataPartition(ismRFE_GNB$iphonesentiment, p = .70, list = FALSE)
-training_3 <- ismRFE_GNB[inTraining_3,]
-testing_3 <- ismRFE_GNB[-inTraining_3,]
+training_3 <- ismRFE_GNB[inTraining_3, ]
+testing_3 <- ismRFE_GNB[-inTraining_3, ]
 
 #random forest #Accuracy: 0.7749 // Kappa: 0.5458
 set.seed(123);ismRFE_GNB_M1 <- ranger(iphonesentiment~., data = training_3)
@@ -284,24 +285,24 @@ rm("ismRFE_GNB_M5", "Pred_ismRFE_GNB_M5", "inTraining_3", "training_3", "testing
 
 #ismPCA_GNB
 set.seed(123);inTraining_4 <- createDataPartition(ism_GNB$iphonesentiment, p = .70, list = FALSE)
-training_4 <- ism_GNB[inTraining_4,]
-testing_4 <- ism_GNB[-inTraining_4,]
+training_4 <- ism_GNB[inTraining_4, ]
+testing_4 <- ism_GNB[-inTraining_4, ]
 
 #pca
 # data = training and testing from iphoneDF (no feature selection) 
 # create object containing centered, scaled PCA components from training set
 # excluded the dependent variable and set threshold to .95
-preprocessParams <- preProcess(training_4[,-59], method=c("center", "scale", "pca"), thresh = 0.95)
+preprocessParams <- preProcess(training_4[, -59], method = c("center", "scale", "pca"), thresh = 0.95)
 print(preprocessParams)
 
 # use predict to apply pca parameters, create training, exclude dependant
-train.pca <- predict(preprocessParams, training_4[,-59])
+train.pca <- predict(preprocessParams, training_4[, -59])
 
 # add the dependent to training
 train.pca$iphonesentiment <- training_1$iphonesentiment
 
 # use predict to apply pca parameters, create testing, exclude dependant
-test.pca <- predict(preprocessParams, testing_4[,-59])
+test.pca <- predict(preprocessParams, testing_4[, -59])
 
 # add the dependent to training
 test.pca$iphonesentiment <- testing_4$iphonesentiment

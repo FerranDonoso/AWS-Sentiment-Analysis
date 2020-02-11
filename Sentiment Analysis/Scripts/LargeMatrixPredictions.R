@@ -1,5 +1,8 @@
 #load large matrix
-LargeMatrixMerged <- read_csv("C:/Users/FDL_4/OneDrive/Escritorio/Course/Module 5/combined large matrix/LargeMatrixMerged.csv")
+current_path <- rstudioapi::getActiveDocumentContext()$path
+setwd(dirname(current_path))
+
+LargeMatrixMerged <- read_csv("LargeMatrixMerged.csv")
 View(LargeMatrixMerged)
 
 LargeMatrixMerged$iphonesentiment <- 0
@@ -9,7 +12,7 @@ LargeMatrixMerged$galaxysentiment <- 0
 #iphone
 #ism_GNB
 #random forest #Accuracy: 0.7728 // Kappa: 0.5448
-set.seed(123);ism_GNB_M1 <- ranger(iphonesentiment~., data = ism_GNB)
+set.seed(123);ism_GNB_M1 <- ranger(iphonesentiment ~., data = ism_GNB)
 Pred_ism_GNB_M1 <- predict(ism_GNB_M1, LargeMatrixMerged)
 
 LargeMatrixMerged$iphonesentiment <- Pred_ism_GNB_M1$predictions
@@ -17,7 +20,7 @@ LargeMatrixMerged$iphonesentiment <- Pred_ism_GNB_M1$predictions
 #samsung
 #ssm_GNB
 #random forest #Accuracy: 0.7712 // Kappa: 0.5191
-set.seed(123);ssm_GNB_M1 <- ranger(galaxysentiment~., data = ssm_GNB)
+set.seed(123);ssm_GNB_M1 <- ranger(galaxysentiment ~., data = ssm_GNB)
 Pred_ssm_GNB_M1 <- predict(ssm_GNB_M1, LargeMatrixMerged)
 
 LargeMatrixMerged$galaxysentiment <- Pred_ssm_GNB_M1$predictions
@@ -44,6 +47,12 @@ LargeMatrixMerged$iphonesentiment[LargeMatrixMerged$iphonesentiment == "GOOD"] <
 LargeMatrixMerged$galaxysentiment <- as.numeric(LargeMatrixMerged$galaxysentiment)
 LargeMatrixMerged$iphonesentiment <- as.numeric(LargeMatrixMerged$iphonesentiment)
 
-LargeMatrixMerged$preference <- ifelse(LargeMatrixMerged$galaxysentiment > LargeMatrixMerged$iphonesentiment, "GALAXY", ifelse(LargeMatrixMerged$iphonesentiment > LargeMatrixMerged$galaxysentiment, "IPHONE", ifelse(LargeMatrixMerged$galaxysentiment == LargeMatrixMerged$iphonesentiment, "INDIFFERENT", "")))
+LargeMatrixMerged$preference <- ifelse(LargeMatrixMerged$galaxysentiment >
+                                         LargeMatrixMerged$iphonesentiment, "GALAXY",
+                                       ifelse(LargeMatrixMerged$iphonesentiment >
+                                                LargeMatrixMerged$galaxysentiment, "IPHONE",
+                                              ifelse(LargeMatrixMerged$galaxysentiment ==
+                                                       LargeMatrixMerged$iphonesentiment, "INDIFFERENT",
+                                                     "")))
 
 pie(table(LargeMatrixMerged$preference))
